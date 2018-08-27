@@ -77,9 +77,11 @@ function! s:formatBlocks(list, baseIndent) " {{{2
             let beforeBegin = brokenBegin[0]
             let begin = brokenBegin[1]
             let afterBegin = brokenBegin[2]
+            let envIndent = s:environment(begin) =~ "equation" ?
+                        \ a:baseIndent + shiftwidth() : a:baseIndent
             call s:addIfNotEmpty(lines, beforeBegin)
-            call s:addIfNotEmpty(lines, begin)
             let formattedLines += s:formatLines(lines, a:baseIndent)
+            let formattedLines += s:formatLines([begin], envIndent)
             let lines = []
             " Format group
             let z = i + s:findEnd(a:list[i:])
@@ -96,12 +98,15 @@ function! s:formatBlocks(list, baseIndent) " {{{2
                     let body = a:list[i+1:z-1]
                     call s:insertIfNotEmpty(body, afterBegin)
                     call s:addIfNotEmpty(body, beforeEnd)
-                    let formattedLines += s:formatBlocks(body, a:baseIndent+shiftwidth())
+                    let formattedLines += s:formatBlocks(body,
+                                \ envIndent + shiftwidth())
                 endif
                 if afterEnd =~ '[.,;:!?]'
-                    call s:addIfNotEmpty(lines, end . afterEnd)
+                    let formattedLines += s:formatLines([end . afterEnd], envIndent)
+                    " call s:addIfNotEmpty(lines, end . afterEnd)
                 else
-                    call s:addIfNotEmpty(lines, end)
+                    let formattedLines += s:formatLines([end], envIndent)
+                    " call s:addIfNotEmpty(lines, end)
                     call s:addIfNotEmpty(lines, afterEnd)
                 endif
                 let i = z
@@ -250,6 +255,11 @@ function! s:breakInSentences(list) " {{{2
             let newLines = split(brokenLine, "\r")
             let firstLine = newLines[0]
             let indentString = repeat(' ', s:indent(firstLine))
+            if firstLine =~ '^\s*\l'
+                let firstLine = repeat(' ', shiftwidth()) . firstLine
+                let indentString = repeat(' ',
+                            \ s:indent(firstLine) - shiftwidth())
+            endif
             let indentString = s:startsWithItem(firstLine) ?
                 \ repeat(' ', 6) . indentString : indentString
             let commentString = s:startsWithComment(line) ? '% ' : ''
@@ -323,6 +333,9 @@ function! s:breakLine(string, ...) " {{{2
         let comment = repeat(' ', ind) . '% '
         let cInd = s:indent(substitute(a:string, '^\s*%', '', '')) - 1
         let spaces = repeat(' ', cInd)
+    elseif !s:startsWithUppercase(a:string)
+        let comment = ''
+        let spaces = repeat(' ', ind)
     else
         let comment = ''
         let spaces = repeat(' ', sw + ind)
