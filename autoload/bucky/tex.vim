@@ -241,7 +241,7 @@ endfunction " }}}2
 
 function! s:breakInSentences(list) " {{{2
     let lines = []
-    let pattern = '\([.!?]}\?\)\s\+' . s:upperOrCommand()
+    let pattern = '\([.!?]}\?\)\s\+\(' . s:upperOrCommand() . '\|\$\)'
     for line in a:list
         if empty(line)
             call add(lines, line)
