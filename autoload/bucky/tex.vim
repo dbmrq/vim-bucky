@@ -145,6 +145,7 @@ function! s:formatLines(lines, baseIndent) " {{{2
     let lines = s:joinText(lines)
     let lines = s:addIndentation(lines, a:baseIndent)
     let lines = s:breakInSentences(lines)
+    let lines = s:indentAfterComment(lines)
     let lines = s:breakInLines(lines)
     return lines
 endfunction " }}}2
@@ -239,10 +240,7 @@ endfunction " }}}2
 
 function! s:breakInSentences(list) " {{{2
     let lines = []
-    let upper = '\(\u\|[ÁÂÃÀÇÉÊÍÓÔÕÜÚ]\|\\textcite\)'
-    let upperOrCommand = '\(' . upper . '\|\\\w\{-}\(\[.\{-}\]\)\?{'
-    let upperOrCommand .= upper . '.\{-}}\)'
-    let pattern = '\([.!?]}\?\)\s\+' . upperOrCommand
+    let pattern = '\([.!?]}\?\)\s\+' . s:upperOrCommand()
     for line in a:list
         if empty(line)
             call add(lines, line)
@@ -264,6 +262,24 @@ function! s:breakInSentences(list) " {{{2
     return s:flatten(lines)
 endfunction " }}}2
 
+function! s:indentAfterComment(list) " {{{2
+    let lines = []
+    let i = 0
+    while i < len(a:list)
+        let line = a:list[i]
+        let pline = i > 0 ? a:list[i-1] : ''
+        if pline =~ "%.*" && pline !~ "%\.$" &&
+            \ (pline !~ "[.!?]\s*%" || line !~ "^\s*" . s:upperOrCommand())
+                let ind = s:indent(pline) + shiftwidth()
+                call add(lines, repeat(' ', ind) . line)
+        else
+            call add(lines, line)
+        endif
+        let i += 1
+    endfor
+    return lines
+endfunction " }}}2
+
 function! s:formatComment(lines, baseIndent) " {{{2
     let lines = a:lines
     let lines = s:joinText(lines)
@@ -274,23 +290,31 @@ endfunction " }}}2
 
 function! s:breakInLines(list) " {{{2
     let brokenText = []
-    for line in a:list
+    let i = 0
+    while i < len(a:list)
+        let line = a:list[i]
+        let pline = i > 0 ? a:list[i-1] : ''
         if empty(line)
             call add(brokenText, line)
+        elseif pline =~ "%.*" && pline !~ "%\.$" &&
+            \ (pline !~ "[.!?]\s*%" || line !~ "^\s*" . s:upperOrCommand())
+        " elseif pline =~ "[^.!?]\s*%.*" && pline !~ "%\.$"
+                call add(brokenText, s:breakLine(line, 0))
         else
             call add(brokenText, s:breakLine(line))
         endif
-    endfor
+        let i += 1
+    endwhile
     return s:flatten(brokenText)
 endfunction " }}}2
 
-function! s:breakLine(string) " {{{2
+function! s:breakLine(string, ...) " {{{2
     let tw = s:textwidth()
     if strchars(a:string) <= tw | return [ a:string ] | endif
     let startsWithComment = s:startsWithComment(a:string)
     let ind = strchars(substitute(a:string,
                 \ '\(\s*\(\\item\s\)\?\).*', '\1', ''))
-    let sw = shiftwidth()
+    let sw = a:0 ? a:1 : shiftwidth()
     if startsWithComment && s:shouldFormatComments()
         let comment = repeat(' ', ind) . '% '
         let spaces = repeat(' ', sw)
@@ -572,6 +596,13 @@ endfunction " }}}3
 " }}}2
 
 " Misc {{{2
+
+function! s:upperOrCommand() " {{{3
+    let upper = '\(\u\|[ÁÂÃÀÇÉÊÍÓÔÕÜÚ]\|\\textcite\)'
+    let upperOrCommand = '\(' . upper . '\|\\\w\{-}\(\[.\{-}\]\)\?{'
+    let upperOrCommand .= upper . '.\{-}}\)'
+    return upperOrCommand
+endfunction " }}}3
 
 function! s:setLines(lnum, count, list) " {{{3
     let difference = len(a:list) - a:count
