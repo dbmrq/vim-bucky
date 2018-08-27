@@ -434,7 +434,7 @@ endfunction " }}}3
 function! s:opensBrace(line) " {{{3
     let line = substitute(a:line, '\s*%.*', '', 'g')
     let line = substitute(line, '.\{-}\(.\)$', '\1', '')
-    return line =~ '[\[{]'
+    return line =~ '[[{]'
 endfunction " }}}3
 
 function! s:bracesAreMatched(string) " {{{3
