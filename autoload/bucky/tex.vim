@@ -145,6 +145,7 @@ function! s:formatLines(lines, baseIndent) " {{{2
     let lines = s:joinText(lines)
     let lines = s:addIndentation(lines, a:baseIndent)
     let lines = s:breakInSentences(lines)
+    if &l:textwidth == 0 | return lines | endif
     let lines = s:indentAfterComment(lines)
     let lines = s:breakInLines(lines)
     return lines
