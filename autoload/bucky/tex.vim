@@ -333,7 +333,7 @@ function! s:breakLine(string, ...) " {{{2
         let comment = repeat(' ', ind) . '% '
         let cInd = s:indent(substitute(a:string, '^\s*%', '', '')) - 1
         let spaces = repeat(' ', cInd)
-    elseif !s:startsWithUppercase(a:string)
+    elseif !s:startsWithUppercase(a:string) && a:string !~ '^\s*\$'
         let comment = ''
         let spaces = repeat(' ', ind)
     else
