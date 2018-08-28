@@ -85,8 +85,9 @@ function! s:formatBlocks(list, baseIndent) " {{{2
             let lines = []
             " Format group
             let z = i + s:findEnd(a:list[i:])
-            if z > i
-                let brokenEnd = s:breakAroundEnd(a:list[z])
+            if z >= i
+                let brokenEnd = z == i ? s:breakAroundEnd(afterBegin) : s:breakAroundEnd(a:list[z])
+                let afterBegin = z == i ? '' : afterBegin
                 let beforeEnd = brokenEnd[0]
                 let end = brokenEnd[1]
                 let afterEnd = brokenEnd[2]
@@ -254,7 +255,9 @@ function! s:breakInSentences(list) " {{{2
             let brokenLine = substitute(line, pattern, '\1\r\2', 'g')
             let newLines = split(brokenLine, "\r")
             let firstLine = newLines[0]
-            let indentString = repeat(' ', s:indent(firstLine))
+            let indentString = firstLine =~ '\\end{.\{-}}' ?
+                        \ repeat(' ', s:indent(firstLine) - shiftwidth()) :
+                        \ repeat(' ', s:indent(firstLine))
             if firstLine =~ '^\s*\l'
                 let firstLine = repeat(' ', shiftwidth()) . firstLine
                 let indentString = repeat(' ',
