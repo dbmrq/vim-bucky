@@ -97,7 +97,7 @@ function! s:formatBlocks(list, baseIndent) " {{{2
                     let formattedLines += a:list[i+1:z-1]
                     call s:addIfNotEmpty(formattedLines, beforeEnd)
                 else
-                    let body = a:list[i+1:z-1]
+                    let body = z == i ? [] : a:list[i+1:z-1]
                     call s:insertIfNotEmpty(body, afterBegin)
                     call s:addIfNotEmpty(body, beforeEnd)
                     let formattedLines += s:formatBlocks(body,
