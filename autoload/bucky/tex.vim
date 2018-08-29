@@ -77,8 +77,9 @@ function! s:formatBlocks(list, baseIndent) " {{{2
             let beforeBegin = brokenBegin[0]
             let begin = brokenBegin[1]
             let afterBegin = brokenBegin[2]
-            let envIndent = s:environment(begin) =~ "equation" ?
-                        \ a:baseIndent + shiftwidth() : a:baseIndent
+            let envIndent =
+                \ s:environment(begin) =~ s:sentenceEnvironments() ?
+                \ a:baseIndent + shiftwidth() : a:baseIndent
             call s:addIfNotEmpty(lines, beforeBegin)
             let formattedLines += s:formatLines(lines, a:baseIndent)
             let formattedLines += s:formatLines([begin], envIndent)
@@ -102,7 +103,7 @@ function! s:formatBlocks(list, baseIndent) " {{{2
                     let formattedLines += s:formatBlocks(body,
                                 \ envIndent + shiftwidth())
                 endif
-                if afterEnd =~ '[.,;:!?]'
+                if afterEnd !~ '\a'
                     let formattedLines += s:formatLines([end . afterEnd], envIndent)
                     " call s:addIfNotEmpty(lines, end . afterEnd)
                 else
@@ -143,6 +144,14 @@ function! s:formatBlocks(list, baseIndent) " {{{2
     endwhile
     " Format remaining lines
     let formattedLines += s:formatLines(lines, a:baseIndent)
+    let i = 0
+    while i < len(formattedLines)
+        if formattedLines[i] =~ '\\end{.\{-}}' && formattedLines[i+1] =~ '^\s*\U'
+            let formattedLines[i+1] = repeat(' ', s:indent(formattedLines[i])) .
+                        \ formattedLines[i+1]
+        endif
+        let i += 1
+    endwhile
     return formattedLines
 endfunction " }}}2
 
@@ -258,11 +267,11 @@ function! s:breakInSentences(list) " {{{2
             let indentString = firstLine =~ '\\end{.\{-}}' ?
                         \ repeat(' ', s:indent(firstLine) - shiftwidth()) :
                         \ repeat(' ', s:indent(firstLine))
-            if firstLine =~ '^\s*\l'
-                let firstLine = repeat(' ', shiftwidth()) . firstLine
-                let indentString = repeat(' ',
-                            \ s:indent(firstLine) - shiftwidth())
-            endif
+            " if firstLine =~ '^\s*\l'
+            "     let firstLine = repeat(' ', shiftwidth()) . firstLine
+            "     let indentString = repeat(' ',
+            "                 \ s:indent(firstLine) - shiftwidth())
+            " endif
             let indentString = s:startsWithItem(firstLine) ?
                 \ repeat(' ', 6) . indentString : indentString
             let commentString = s:startsWithComment(line) ? '% ' : ''
@@ -608,6 +617,10 @@ function! s:prevNonBlankNonWhitespace(list, index) " {{{3
         endif
     endwhile
     return 0
+endfunction " }}}3
+
+function! s:sentenceEnvironments() " {{{3
+    return get(g:, 'bucky_sentence_environments', '^$')
 endfunction " }}}3
 
 " }}}2
