@@ -54,6 +54,14 @@ function! s:formatBlocks(list, baseIndent) " {{{2
             call add(formattedLines, line)
         " }}}3
 
+        elseif line =~ '%.*bucky:\s*off' " {{{3
+            let formattedLines += s:formatLines(lines, a:baseIndent)
+            let lines = []
+            let z = i + s:findBuckyOn(a:list[i:])
+            let formattedLines += a:list[i:z]
+            let i = z
+        " }}}3
+
         elseif s:startsWithComment(line) " {{{3
             let formattedLines += s:formatLines(lines, a:baseIndent)
             let lines = []
@@ -590,6 +598,17 @@ function! s:findMatchingBrace(list) " {{{3
         let i += 1
     endwhile
     return -1
+endfunction " }}}3
+
+function! s:findBuckyOn(list) " {{{3
+    let i = 1
+    while i < len(a:list)
+        if a:list[i] =~ '%.*bucky:\s*on'
+            return i
+        endif
+        let i += 1
+    endwhile
+    return i
 endfunction " }}}3
 
 function! s:findEndOfComment(list) " {{{3
